@@ -14,7 +14,26 @@ export default function HomePage() {
   useEffect(() => {
     const autoRedirect = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        let { data: { session } } = await supabase.auth.getSession()
+        
+        // Если нет сессии — автологин как guest
+        if (!session) {
+          const guestEmail = "guest@chatbot.local"
+          const guestPassword = "guest-password-12345"
+          
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: guestEmail,
+            password: guestPassword,
+          })
+
+          if (error) {
+            console.error("Auto login error:", error)
+            setIsLoading(false)
+            return
+          }
+          
+          session = data.session
+        }
         
         if (session) {
           // Получаем home workspace
