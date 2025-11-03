@@ -16,45 +16,20 @@ export default function HomePage() {
       try {
         let { data: { session } } = await supabase.auth.getSession()
         
-        // Если нет сессии — создаём анонимного пользователя
+        // Если нет сессии — логиним как общего guest-пользователя
         if (!session) {
-          const { data, error } = await supabase.auth.signInAnonymously()
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: "guest@chatbot.local",
+            password: "GuestUser123!@#"
+          })
 
           if (error) {
-            console.error("Anonymous sign-in error:", error)
+            console.error("Guest sign-in error:", error)
             setIsLoading(false)
             return
           }
           
           session = data.session
-          
-          // Создаём профиль и workspace для нового анонимного пользователя
-          if (session?.user) {
-            const userId = session.user.id
-            
-            // Проверяем есть ли профиль
-            const { data: existingProfile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("user_id", userId)
-              .single()
-            
-            if (!existingProfile) {
-              // Создаём профиль
-              await supabase.from("profiles").insert({
-                user_id: userId,
-                username: `user_${userId.slice(0, 8)}`,
-                has_onboarded: true
-              })
-              
-              // Создаём workspace
-              await supabase.from("workspaces").insert({
-                user_id: userId,
-                name: "Home",
-                is_home: true
-              })
-            }
-          }
         }
         
         if (session) {
