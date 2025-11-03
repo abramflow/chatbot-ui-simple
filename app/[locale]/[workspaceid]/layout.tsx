@@ -64,7 +64,18 @@ export default function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
       const session = (await supabase.auth.getSession()).data.session
 
       if (!session) {
-        return router.push("/login")
+        // Автоматический логин для гостевого пользователя
+        const guestEmail = "guest@chatbot.local"
+        const guestPassword = "guest-password-12345"
+        
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: guestEmail,
+          password: guestPassword,
+        })
+
+        if (!error && data.session) {
+          await fetchWorkspaceData(workspaceId)
+        }
       } else {
         await fetchWorkspaceData(workspaceId)
       }

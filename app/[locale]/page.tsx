@@ -1,12 +1,54 @@
 "use client"
 
 import { ChatbotUISVG } from "@/components/icons/chatbotui-svg"
-import { IconArrowRight } from "@tabler/icons-react"
+import { supabase } from "@/lib/supabase/browser-client"
 import { useTheme } from "next-themes"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function HomePage() {
   const { theme } = useTheme()
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const autoRedirect = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (session) {
+          // Получаем home workspace
+          const { data: workspace } = await supabase
+            .from("workspaces")
+            .select("id")
+            .eq("user_id", session.user.id)
+            .eq("is_home", true)
+            .single()
+
+          if (workspace) {
+            router.push(`/${workspace.id}/chat`)
+          } else {
+            setIsLoading(false)
+          }
+        } else {
+          setIsLoading(false)
+        }
+      } catch (error) {
+        console.error("Auto redirect error:", error)
+        setIsLoading(false)
+      }
+    }
+
+    autoRedirect()
+  }, [router])
+
+  if (isLoading) {
+    return (
+      <div className="flex size-full flex-col items-center justify-center">
+        <div className="text-2xl">Загрузка...</div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex size-full flex-col items-center justify-center">
@@ -15,14 +57,7 @@ export default function HomePage() {
       </div>
 
       <div className="mt-2 text-4xl font-bold">Chatbot UI</div>
-
-      <Link
-        className="mt-4 flex w-[200px] items-center justify-center rounded-md bg-blue-500 p-2 font-semibold"
-        href="/login"
-      >
-        Start Chatting
-        <IconArrowRight className="ml-1" size={20} />
-      </Link>
+      <div className="mt-4 text-lg text-gray-500">Инициализация...</div>
     </div>
   )
 }
